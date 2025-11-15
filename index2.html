@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background-color: oklch(39.1% 0.09 240.876);
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    h1 {
+        font-size: 80px;
+        color: solid black;
+        margin-bottom: 20px;
+        font-family: 'Courier New', Courier, monospace;
+    }
+
+    #maze-container {
+        border: 10px solid black;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        width: max-content;
+        height: max-content;
+        border-radius: 10px;
+    }
+
+    .row {
+        display: flex;
+    }
+
+    .cell {
+        width: 50px;
+        height: 50px;
+        /* border: 1px solid rgb(194, 194, 194); */
+        background-color: oklch(96.7% 0.067 122.328);
+    }
+
+    .wall {
+        background-color: oklch(40.5% 0.101 131.063);
+        /* border: 1px solid black; */
+    }
+
+    #donkey {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        z-index: 1;
+    }
+
+    #potion {
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+    }
+
+
+    select {
+        width: 150px;
+        border-radius: 20px;
+        border: none;
+        margin-bottom: 20px;
+        font-size: 20px;
+        font-family: 'Courier New', Courier, monospace;
+        padding: 10px 20px;
+    }
+
+
+    #glitch-flash {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        display: none;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease-out;
+        z-index: 9999;
+}
+
+
+@keyframes flash {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    50%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+}
+
+    
+</style>
+
+<body onload="createMaze()">
+    <h1> DONKEY QUEST</h1>
+    <select id="levelselect">
+        <option value="1">Level 1</option>
+        <option value="2">Level 2</option>
+        <option value="3">Level 3</option>
+    </select>
+
+    <div id="maze-container">
+        <img src="donkey.png" id="donkey" width="50px" height="50px" alt="donkey">
+        <img src="potion.png" id="potion" alt="potion" width="50px" height="50px">
+    </div>
+        <img id="glitch-flash" src="glitch.png">
+
+
+</body>
+<script>
+    const level1 = [
+        [1, 0, 0, 0],
+        [1, 1, 1, 1],
+        [0, 1, 0, 0],
+        [0, 1, 1, 1]
+    ];
+
+    const level2 = [
+        [1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1],
+        [0, 0, 1, 0, 0, 1],
+        [1, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1]
+    ];
+
+    const level3 = [
+        [1, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [1, 0, 0, 1, 0, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+        [1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+        [1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+        [1, 0, 0, 0, 1, 0, 0, 1, 0, 1],
+        [1, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+        [1, 1, 1, 0, 0, 0, 1, 0, 0, 1]
+    ];
+
+    let mazearray = [];
+    const maze = document.getElementById("maze-container");
+    const Level = document.getElementById("levelselect");
+
+    function clone2D(arr) {
+        return arr.map(row => [...row]);
+    }
+
+    Level.addEventListener("change", () => {
+        let level = Number(Level.value);
+        if (level === 1) mazearray = clone2D(level1);
+        if (level === 2) mazearray = clone2D(level2);
+        if (level === 3) mazearray = clone2D(level3);
+        loadMaze();
+    });
+
+    
+
+    function loadMaze() {
+        maze.innerHTML = `
+            <img src="donkey.png" id="donkey" width="50" height="50">
+            <img src="potion.png" id="potion" width="50" height="50">
+        `;
+
+
+        // draw grid
+        for (let i = 0; i < mazearray.length; i++) {
+            const row = document.createElement("div");
+            row.classList.add("row");
+
+            for (let j = 0; j < mazearray[i].length; j++) {
+                const cell = document.createElement("div");
+                cell.classList.add("cell");
+                if (mazearray[i][j] === 0) cell.classList.add("wall");
+                row.appendChild(cell);
+            }
+            maze.appendChild(row);
+        }
+
+        mazearray[0][0] = 2;
+        setPosition("donkey", 0, 0);
+
+        let endRow = mazearray.length - 1;
+        let endCol = mazearray[0].length - 1;
+        setPosition("potion", endRow, endCol);
+    }
+
+    function setPosition(id, row, col) {
+        const elem = document.getElementById(id);
+        elem.style.top = row * 50 + "px";
+        elem.style.left = col * 50 + "px";
+    }
+
+    function getDonkeyPos() {
+        for (let i = 0; i < mazearray.length; i++) {
+            for (let j = 0; j < mazearray[i].length; j++) {
+                if (mazearray[i][j] === 2) return [i, j];
+            }
+        }
+        return [-1, -1];
+    }
+
+    document.addEventListener("keydown", (e) => {
+        let [r, c] = getDonkeyPos();
+
+        if (e.key === "ArrowRight" && c + 1 < mazearray[0].length && mazearray[r][c + 1] === 1) {
+            mazearray[r][c] = 1;
+            mazearray[r][c + 1] = 2;
+        }
+
+        if (e.key === "ArrowLeft" && c - 1 >= 0 && mazearray[r][c - 1] === 1) {
+            mazearray[r][c] = 1;
+            mazearray[r][c - 1] = 2;
+        }
+
+        if (e.key === "ArrowUp" && r - 1 >= 0 && mazearray[r - 1][c] === 1) {
+            mazearray[r][c] = 1;
+            mazearray[r - 1][c] = 2;
+        }
+
+        if (e.key === "ArrowDown" && r + 1 < mazearray.length && mazearray[r + 1][c] === 1) {
+            mazearray[r][c] = 1;
+            mazearray[r + 1][c] = 2;
+        }
+
+        let newPos = getDonkeyPos();
+        setPosition("donkey", newPos[0], newPos[1]);
+
+        const potion = document.getElementById("potion");
+        if (potion.offsetLeft === newPos[1] * 50 &&
+            potion.offsetTop === newPos[0] * 50) {
+            flashGlitch();
+        }
+    });
+
+    // Load level 1 on start
+    mazearray = clone2D(level1);
+    loadMaze();
+
+    function flashGlitch() {
+    const img = document.getElementById("glitch-flash");
+    
+    // Show image
+    img.style.display = "block";
+    img.style.opacity = "1";
+
+    // Fade out
+    setTimeout(() => {
+        img.style.opacity = "0";
+        setTimeout(() => {
+            img.style.display = "none";
+        }, 150);
+    }, 150);
+}
+
+</script>
+
+</html>
